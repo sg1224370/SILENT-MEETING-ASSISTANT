@@ -1,0 +1,10 @@
+to run Use in Powershell:
+
+$project = 'D:\project\hand-gesture-recognition-using-mediapipe-main\hand-gesture-recognition-using-mediapipe-main'
+Set-Location $project
+& "$project\.venv\Scripts\python.exe" app.py
+
+If you want to run from a fresh terminal without the project folder, use:
+
+cd "D:\project\hand-gesture-recognition-using-mediapipe-main\hand-gesture-recognition-using-mediapipe-main"
+.\.venv\Scripts\python.exe app.py

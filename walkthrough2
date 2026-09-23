@@ -1,0 +1,74 @@
+# SilentMeet: Real-Time Two-User WebRTC Video Call Implementation & Walkthrough
+
+We have extended **SilentMeet** with a production-grade, two-user WebRTC video and audio call system while keeping all existing UI aesthetics, live silent feeds, and MediaPipe AI gesture detection fully intact.
+
+---
+
+## 🚀 Active Services
+
+| Service | Port / URL | Network Accessible | Status |
+|---|---|---|---|
+| **FastAPI Backend & WebRTC Signaling** | `http://127.0.0.1:8000` | `http://0.0.0.0:8000` | 🟢 **RUNNING** (`server.py`) |
+| **SilentMeet Frontend** | `http://localhost:5173/` | `http://<LAN_IP>:5173/` | 🟢 **RUNNING** (`npm run dev`) |
+
+---
+
+## 🛠️ What Changed & Added
+
+### 1. Backend In-Memory Room Management & WebRTC Signaling
+- **File**: [`server.py`](file:///d:/project/hand-gesture-recognition-using-mediapipe-main%20-%20Copy%20-%20Copy/hand-gesture-recognition-using-mediapipe-main/server.py)
+  - Created `RoomManager` class supporting rooms capped at 2 participants for the MVP.
+  - Implemented `/ws/meeting/{room_id}/{peer_id}` signaling WebSocket handling:
+    - `join`: Registers peer and responds with `room_joined` containing existing peer details and initiator status.
+    - `offer` & `answer`: Relays standard WebRTC Session Description Protocol (SDP) packets directly between peers.
+    - `ice_candidate`: Relays ICE candidate packets for peer-to-peer NAT traversal.
+    - `track_state`: Synchronizes camera and microphone enabled/disabled states.
+    - `leave` & disconnect handling: Broadcasts `participant_left` to the remaining peer so the UI cleans up immediately.
+  - Bound Uvicorn to `0.0.0.0:8000` for seamless local network / Wi-Fi testing.
+
+### 2. Frontend WebRTC Modular Integration
+- **File**: [`frontend/src/utils/webrtc.js`](file:///d:/project/hand-gesture-recognition-using-mediapipe-main%20-%20Copy%20-%20Copy/frontend/src/utils/webrtc.js)
+  - Modularized `RTCPeerConnection` configuration with Google STUN (`stun:stun.l.google.com:19302`).
+  - Track addition and stream lifecycle management.
+- **File**: [`frontend/src/components/JoinModal.jsx`](file:///d:/project/hand-gesture-recognition-using-mediapipe-main%20-%20Copy%20-%20Copy/frontend/src/components/JoinModal.jsx)
+  - Polished room join modal prompting for **Display Name** (e.g. Sarthak / Rahul) and **Room ID** (e.g. CODE26) adhering to SilentMeet's glassmorphism style.
+- **File**: [`frontend/src/components/VideoStage.jsx`](file:///d:/project/hand-gesture-recognition-using-mediapipe-main%20-%20Copy%20-%20Copy/frontend/src/components/VideoStage.jsx)
+  - Replaced static avatar placeholders with real `<video>` and `<audio>` elements for connected remote peers.
+  - Shows dynamic camera-off avatars and muted indicators.
+  - Shows a "Waiting for Participant" state with the room code when only 1 user is present.
+- **File**: [`frontend/src/components/Header.jsx`](file:///d:/project/hand-gesture-recognition-using-mediapipe-main%20-%20Copy%20-%20Copy/frontend/src/components/Header.jsx)
+  - Dynamic room code badge with click-to-copy functionality.
+  - Real-time WebRTC connection pill (`🟢 Connected`, `🟡 Connecting P2P...`, `Waiting for Peer`).
+- **File**: [`frontend/src/App.jsx`](file:///d:/project/hand-gesture-recognition-using-mediapipe-main%20-%20Copy%20-%20Copy/frontend/src/App.jsx)
+  - Dynamic host calculation (`window.location.hostname`) ensuring cross-device LAN compatibility.
+  - Dual-channel WebSocket architecture: `/ws/meeting/...` for WebRTC signaling and `/ws/gestures` for MediaPipe AI messages.
+  - Continuous MediaPipe AI vision loop (~7 FPS) seamlessly operating on the local webcam stream without hardware locks or conflicts.
+
+---
+
+## 🧪 Verification & Acceptance Testing
+
+### 1. Two-Browser Call Test
+1. **User A (Sarthak)**:
+   - Open [http://localhost:5173/](http://localhost:5173/).
+   - Name: `Sarthak`, Room ID: `CODE26`.
+   - Click **Join Meeting** and allow camera/mic.
+   - Status displays `Waiting for Peer (1 in room)`.
+2. **User B (Rahul)**:
+   - Open [http://localhost:5173/](http://localhost:5173/) in an Incognito window or second browser.
+   - Name: `Rahul`, Room ID: `CODE26`.
+   - Click **Join Meeting** and allow camera/mic.
+3. **P2P Video & Audio**:
+   - Both browsers establish RTCPeerConnection: header status turns `🟢 Connected (2 in room)`.
+   - Sarthak sees his local camera + Rahul's real camera feed.
+   - Rahul sees his local camera + Sarthak's real camera feed.
+   - Audio tracks are streamed bidirectionally.
+
+### 2. Controls & State Synchronization
+- **Mute Mic**: Clicking the microphone button toggles audio track state and updates the remote participant's microphone badge immediately.
+- **Toggle Camera**: Turning off the camera renders the initialed avatar and disables the video track without dropping the WebRTC session.
+- **Leave Call**: Clicking **Leave** stops local media tracks, closes RTCPeerConnection, notifies the signaling server, and returns the user to the join screen. The other user immediately sees `participant_left` and transitions to the waiting state.
+
+### 3. MediaPipe AI Gesture Detection in Call
+- When Sarthak shows 👍 (Thumbs Up), the backend MediaPipe engine classifies the gesture, fires `"👍 I Agree"`, and posts it to the **Live Silent Feed** on both Sarthak and Rahul's screens without needing microphone audio.
+- When 🖐️ (Open Palm) is shown, `"🖐️ I Have a Question"` is broadcasted.

@@ -1,0 +1,16 @@
+🛠️ How to Start the App in the Future
+1. Start the Backend:
+powershell
+
+cd "d:\project\hand-gesture-recognition-using-mediapipe-main - Copy\hand-gesture-recognition-using-mediapipe-main"
+.\.venv\Scripts\python.exe server.py
+
+
+2. Start the Frontend:
+powershell
+
+cd "d:\project\hand-gesture-recognition-using-mediapipe-main - Copy\frontend"
+npm run dev
+
+
+Navigate to http://localhost:5173/ in your browser, grant webcam access, and show gestures to your camera!
